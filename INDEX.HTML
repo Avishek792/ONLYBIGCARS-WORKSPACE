@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Card Invoice</title>
+    <style>
+        /* Page Styling */
+        @media print {
+            body {
+                width: 210mm; /* A4 width */
+                height: 297mm; /* A4 height */
+                margin: 0;
+            }
+            .btn-create-pdf {
+                display: none; /* Hide button when printing */
+            }
+        }
+
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header with Logo and Title */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            color: red;
+        }
+        .header img {
+            width: 100px; /* Increased logo width */
+            height: auto;
+            margin-right: 10px; /* Space between logo and title */
+        }
+        .header-title {
+            margin-left: auto;
+            font-weight: bold;
+            font-size: 24px; /* Increased font size for the title */
+        }
+
+        /* Section heading */
+        .section-heading {
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            margin: 15px 0;
+            background-color: red;
+            color: white;
+        }
+
+        /* Layout grids */
+        .details-grid, .services-grid, .booking-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        /* Customer Details grid in 4x3 layout */
+        .details-grid {
+            grid-template-columns: repeat(3, 1fr); /* 3 columns */
+            grid-template-rows: repeat(4, auto); /* 4 rows */
+        }
+        
+        .booking-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .services-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        /* Styling for each item */
+        .details-grid div, .services-grid .service-item, .booking-grid div {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input, select {
+            padding: 8px;
+            font-size: 14px;
+            background: none;
+            border: none;
+            
+            text-align: center;
+        }
+
+        /* PDF button */
+        .btn-create-pdf {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: blue;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        /* Image upload styling */
+        .image-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .image-upload input[type="file"] {
+            display: none; /* Hide the default file input */
+        }
+        .image-upload label {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px; /* Add space between label and uploaded images */
+            width: 100px; /* Fixed width for upload button */
+            text-align: center;
+        }
+        .uploaded-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .uploaded-images img {
+            max-width: 150px; /* Set maximum width for uploaded images */
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header Section with Logo and Title -->
+<div class="header">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAABwCAMAAAC6s4C9AAABaFBMVEX////nHCAAAAD+/v7+/vzlHCPmHCD//f+/JzD1y8v19fXoHRw1NTXoGyL7///Nzc2+vr7///rY2Njg4OAdHR31wcLu7u6tra36//v/+/rFxcW2trb//vj/+v/o6OgYGBjCJSwODg7CJygsLCyLi4v/6ezkHSf/9vZAQEBycnKBgYH709b/7uf/9PRoaGhJSUnRPkKbm5tfX1+goKA6OjrztbLgiojHTk/gGynIQEfMHCr/9/D/7fD/4dzrlpfWHSH83eL91s5TU1PqpJy6Rk3qanXRY2HUeX3FR0vIFBXPWlzzvbfsp6rjhoLTHSnyuLe/P0Lck5nQaW7mfob/ztbbnJ/XjIjIXVnKamrFODXHaGPNNkHipZvZGiq7FhfQV1HqnabuxLvJNkrRIjTji5WrXmK2KirFd3+hMjvfx8mgHy30GRfUMDbep7DAPlC6WF/sgH/itr3aU1/+oqTZUUzPGQ20XVrIjY8l9UUNAAAdpklEQVR4nO1di1/bRraWMzMabEUigkCkRCaOiUWIbUKSAka2IwgpT9cmTkNCqdlyu033ke5uc7d7//17zujhl2ziLEW+d/39WgKyJc3MN3PmnDNnzkjSvwXCDY3uKLatJOKEzJSEnGAs4b6qGpzrFtUMTtfqtq2OWDCVKQqbmpMMiXNqUE7KX7uyojJ14KsBqgz3JGnaCFqFWJrGSW5XkeW+GxRWYvh1TgD/XutfCQjXtKVdmY0Dhaqsqu5eWVBINMKX1l02MoXY5u5GlRrAg0QpIdXNElKY6OciuEFQ6O5XKGlTqGsaofnNqJcrzGaKu5EbC/4kIijcOmWMxU0htqWqsoOGZaS5oVOS5tVDV2bqoKYfAAaM1NfLGqVYP02TjjK2rODzB70aKUzI7noZvh2yQolG9ZojRzSLR+H6kjQWHIIk4NRcc9S4KUwwMXxUO7tlaGligARM0+QUA0E2uPEjAYTY2YZFKAVCoH/Sb+rMG5uDb4BPWfYCRj5vU8g1o9ysR92mQIeXnYbOx0COQgkIobz8DXT2ERvqygGyTAZ55x6aQCE0H+Fpa+dAURR54CQWCRi0cmmzCvcTqvG0RIv/LKlI0+A3iw/t4wLITs6DtqGSZoAIjmoWBeZbhq8YAwqRRGrw3AaT2ZA6Xg9ULILt7FAYOzAKCeeF79yEoiRGk6RqQpFbb4ownwKFJK3R5IHtUTjwMfCZorb2LHxzSCF0IuvIse2Iu5BCt1nEXhIndz4IjsK5LFaQxcwhUiiXzpIg+gAalCx5CtJ1RApRMVGdH0xoXq5Tzg3zrctg0MiDZakYhCxTM7lGzJAUoLAI2lSUdFKgS9RrpmaOwSAkyKGZfn0AIiwRN4U4wbDWp4JEqE6xb5m1OtCqKKNRaMNTpvISSlGKFBaawIN9CYUw/DeTHCZOnQQto+lmbp8l7Agxrqoyy+Y1zaLxUyghhTzXdBUQWHFTCLpngtXfWBKnug4SjSxBuXD4jDQXCgr3i8Af/KcTmM+OgUGQh8pQCuXS+wJQCIpw2Cwm/TYDWk7/26GgzN4vxE8hlzTU2KCzX5yC7TVM674uCJOc4wDUQQaCPQe2KrOj1PrBkO2EWj+xLLBLNAln1DUHbRVkL4JBwY8QpPW3Jo7C0C6EP8wXB3KUQwBekai/ppyS2CmUNPGT7mRt1AFGtb+uGKhugL1cFfoEiFLCLzI2mmCjU5iZs3STUAm0IlLcc4fUKyBIBdkLUpcHpj0MwrRWbKJV2v926OxqJklNqo2FIAXLd6lZx742ou5+5cCpUK3vFbkoFOoz6w4DzWFE+Y7T2n7OoDBEOAf7srrhDnup93BQMHcLBvQaovvtAhwa+U3UkSM6EEuw/RyqXLFTiFYNCFOQV9B6oMeN1FRXDuCK2c6alSZQJjCxaWWzhbqMOpp0AKno7i1p1AB9EUaSMZcZdrtvSjHmnpThpWneplCzas4gS0txvzEpum/ipZBipwMFXlpzVFS646YQwEpnVYP7FOr5c+xYIOBHG4cycxqE4yikJE2sE3eYHPY4AgHgHOmkYxRC7zbKey0mD3AJOGswFVItVgKRQjBjNZA430AlbRRZozTU1QP9MCjO0pJGgUJqvXVV0X6jilJ3Mw9KLUX3KJcK74Y6DsULZMZKm1XC0ZTwFVL0W1X3bTRVI7Q8lW1uo/MnVv4kMQpxEJo51PtsFqmwXSeAQtXZKRvQr0BEEb3QRIscPxlNVWb190UiRpRhcNC2h/ZMUWfZtt1mkXMqDGUP8IRGlgkK+9pFZu53BWkcKBRmBTWT54JCNW6jQnhIkpYGmr0JFFrbZ0y1he97RLvQ2YH7dRMppOaL+uU9AMxG93uQSagFe22Dzv/0m3Ncv4jweMj2+fem5q2ExAyCcnTprQuiBr2I8VIIr5ftzZyYCkFdJ9aag04V9fMp9GYtuTS1jYsMwIKm03LTvdzrpNqlehUopCGFaG/lPrlgUcjd7j1clYJyZrbFUlSc5CEMDScLXjhkwzzA1wZca3dfo08EG0fnxTcuG8ltCzMaaK9gHrwraGnTkEDOEbN6qqpRjuoQIKoVxW4dLlHuSVFcMqSWrpG5s961fuFHRg3Z3a2AvqVJcZsUQpASDvJq2ELM9QHEeXYO5kEd2kbXpa39EcsFFDJUresnFrrWcMGP07XsZRSqoPSWnBe46OBTiD5a3eA7DtzYE64hC0cPc18soQMvZgJxVRqd3KYwfsaAQhXs5eMc0QxDR5FGwZ4btVzC18kyR1AzpBDdnHv1xHDfLzCiJFpTF2gj+xTCfTDDLO220D3bNbv46ivLNoC/+GdCYdcTCsbPyE31+4DJ7vsyB5Pc4DxtmCetqMCjgRAzOXoo2D5MazANCqWyumknlKFPgXErq/XDakiIMJeBwq0PcGtP0BRDXznzXoGrYXHyJwnDB6S+DsbPeDAIHd6p6YJCkIAaTNHKKAUDCr2lCLZXplyoixq15hx1OIUyOjVUB+4JCUEKuWY2DtA72hW5I+PKF4hSG18BqkTcVgVYsVAK/WigE+m6odpnSTTJgUJonIvT9vre55TPoxD6wUEN1941YFDTyy/q6vCxjNEeCTtTo1K4Toj2MqegTSlKEJMRvkNVMYjgYA1nW6AwZpUUZx1Cit8M8+NfK0CVrAB3wuAi5o4bhoJ8VhdDfzTqGqXzioHaoobL7oXD0iVyFO+TS5t5rrUp1DECsbrpmROd3hmkEJTU0lRVGhcKQW/Y2oh7oTcA6HknJjEsUwOT3CzvMjnQJD9PSsiiie36H0wRe4PraHryzP6M+3AO1jRPv8TIUx10df3iR9Rb5ESXuYwar6K2dsug88Awj51CghTOfRyTmVAGe/mIcKSQGwatniYYG4lCkKNgVNjOC11EcAMjxAK7IJEY6hlA4Suf71g+hRiShuGPUvmkrvrRGh0Uqt7MuYOmq3ACxkwhNQzNfOGymIchzC0quoZs9zCnCQUBXZtrB3ZptLhWFaP5ZRejp8Cyw0VHUv7OxRly2GKVAu9mp0naDifEQETTyB26al/fgXkTw3umOr8eJ8B0MozioQvzxxc0/NUBB09CUHiyhH0bVEKNFN+7I28QgLlLTWA/0ER0rKRJ1eMSUji0jyLtuznvDgGkkEaLYI9CdyPHxyWMm1I9DyWNOd4CbWUsge0cmZIQT1TjuWNU/kZ9EAznAxElj9DQayECSoZRyGyb1V+YOHB9UuD3NLVeO1GBNiIYtb6+RMaFQo5bBuKPeUK1AcaKvSnsZdD1uCbNOYkvoBCMvMwRpT6FtPzGxScPjQnC2DbnyNLaklGYJIVmK+LLItxczjREgFa87AkQ4Zopxb9UL4u1+YTbBHtZBwpNglO0Ovr6JfTG0n7VZxA0ywIu2V5CoQoSfLNg0DYpugFWTX4zqmvD7Kgo9n5VI+MxF+JaYfXUHjEy5fcA6g2Kel4De1nXUNfTKrtMHVlTBrrU+l7Zb1/OyUUG1NzE8C0ZuKFpz8JtVOEoBAr1NSdakQUK63vm+FDIzca5OmpUw9VDFm5KO4sbWUCKSbrOk6vefrGRgBsIsw1T8yQp5+ZJHZfclaFGharITgOUAjPkBGwto/jGjepAwgLJ1qg2HlMh6O64ATMR/ygUK0Sq+4cyx+AjDhSma3VUI0csGWOKfJxPozqEu1s4P8RAYrF3eCBQiK9WxdpEAFxpEtuE+pnHaGl2nOfGkFa9TlCd5A5ZImaTIuGNQgZqIa4xAYVEt4p7Lu42HJ1C97tKGs16XG3g+QwTQ3OYUYGq1G5R64zKhvfryQyuPfZ9W8Ft5M0ij3+ZyYdFk2dyZLTy9QImLJuxj3O4m9MLWqmegpKRGGHDo+xtPVMO3nJucUItCyb6mmt7NAztCbbzA+8KoQC7nr5mLGpfIa4+OW/NsdiRJkDN1w5G2o4BhcJeFvMLNg9Zy6JoHWEulP0FhWySC41I14kEQ/lzKHRPkz0UEqO4waAL9b0edSM1k5TGhkJCi00XKRy1ya8YDGWWXN9b4r65pS3tuUK+j0YhiEu2UcD0HShIOame2exyCmWMtOmKRQNhkM9EZh6QbRlMigIl8UdcCBBi5DdtRVHi3qAt1gNYtoHb3HFfCpg6G7YqKPxsDgWFCdVdt3jaMCQRWd+oR85nvW+vYyB+57CCKfmHA0yH0D8KQXGGV5ja+KgzNSchKIxXJUWVWLGPqxiEDy0P2uFFRhVXP79gfr4D58jCLYIYmOdt0L38AXbmyML91u0kCbpWaf4WmSkFQy7wFdKYjEKJwmSBy6FsaIDXNQBXwuvNIogzHIMarvaqYrl3RApVjEIF6wC0S3hU7t3gPDMdN7obVR139XdSuLUpR++IkzFu3+Bjo5HS6iZThPM95sUmoFDO1NJEhMwAg0sbtgijGKFg3iBsNZeQP4lIhk6TUx4Jl6zZ10+WiNhcEjaLJTXO0fMeZdqzugiyGRcKydxHWWzei3s3jMwUhia5rlOxxyN/zhT50kWiLvhytAbapPCUGZbQthOXLhfL50dojXawQugS7imN7EAK+7FmES12CqkmQiA1aR2DlWP3zXguj90KjkLM9UPNX1xVxFiPkr4B5aiL0VMGilEYhYVmS0QvRW/QFvaKihLoeBt39kttJZPw3KEIxI+i0D5L6jR+CnVoJuzv5qprJ7zoBrUfIo8PhhMNuXI1X8a2Ongh9rmDVZ8WG5raX/2MJ8uqtxTbaoK+j4Fr6GERMepB0/cXQni/4Ta3WbCEGMWbvIRf6blTtEZYEHolt2+X7WZOt/TY1RlMyIKlTjotW7i2Yhak0Pr2+ZyhoXWGiwTV/wo0iRF8Dshq/QQTUBAJbEJu1n4cWi0Xc7IxRfntbdkwuLeCK5LdoHf8HKPhlDbzLIB8cLJE485yIaEg5ai8m68xrkRJiP9jBbNbx1WSNk0TKbQaP36Rv0hlp0kQMLjrD1gsvxcbInz0f1kV1pSiHmzpIlYK3dxUdCFeOXQxgVQP8EKCfbiQNJ3yyxv594Uh7C+t0MRJG+NkFRYrFKHnEU4NTDZDyuutL3qM7b4r4DSP23thKB+3htYLKFRtWy3tm5jWxKOQiA3iUv7M9kLXQoQ0Ms+TE7uDTRfx5sY2SHyQEbbYwRcjMNeM0zA0KBL84Eb1nRs29CjPYZi+Ev3kuHfZOspi1xj8GFzDgGmkfoJrGmk/haWgkNQcL/qwLT/DudA9wWyXYyBIOcZpmmsHwofFRIx5rEi4Z1tigU/TwLI4yth93f9zIGcaOMvjljvOl9brIppjIHD7DCgB2QsMIfJiv8UwBGH63lW8rGFtfcvb9KZCVzMl9KHHTSGUE2bwyp6LvVN00i8SXFcGu1T/ukKEFJNgiv6jY4/6BDFe7FdbJgblUdTXcq9aKF+GvBReW2Ku2ASFW3s9CnHdMHfqqqxky0zkXpNFwH4wdPfzHMa4FTuFMBXqBsn99GHqw4dMZip+fPhQQykqhoC29NPUhykoVQYx0mN+LlINplMNrCaS/1MmO/xu8fAPcI/pxX6LcUiklPnnv+Drp5yMV4QAWcTPFRRglh63JMVgZWiq6kVyXLAtlASwVKFcxlbyCwu2hXdjKhjd0IrJi4vtz7gnJywZdOwJwxD3lFbEB3NtNALUavk0UqjHTqGXwRJnjT50fav/4yv9crs0HcFgIvTsi57sxZSJJwVBiJdV0G+K7r9JOzhN/IZ34U9COj+KHX49L2uc3xcdbdJuGBI22yjPaT/rMgr73t7dLl2Pibh9QmFfc/R1bW/D+xc8BxP994yfoRUMXtbdLp09IOr2cSEwkB5knBCUjHxRwTqqEz6IkMsfNLBxxKdaJ35fRr4EozfT74srKJfUGZ872lujmyekrs3j+AxDD8Nr8X8QV1OdrmbppnHsKPz/hytp4KEPmVA4wQQTTDDBBBNMMMEEE0wwwQQTTDDBBBNMMMEEE0wwwQQTTDDBBBNMMMEXQ/MSSncEZ3rnj+EOeU6k3sNVvfhrkbG7Ow5QxHRqUuy7Nf8DQb2DIDqAqWJwz56mpYmG5/10hBjhkRGYGgAP7BTkh5/gQQSYbCjuzAX/gUhzsQ9T5AsNQLwTljBrE2ZFb4d5amLvhzi7R8I7BI3+R5ijYgx2a/4nggoGO4J1RYimiMIXW8S0js0MICg5nkaZ9rJc4oAMAupxqzLvE68TXAMwP1A6TQxdb7OBKUjhEshJsdm3PbLEIXSGLonzDHXD6NiapInMCHHUYJwQnLnYd7k7KjrcgdH3xd7g5u7tLZ0X2p+gOMQ0L20yULnRgEOKGZUpzn/hRzgT4pk2QUB1R3mpbllUujxwN9wi0Vls/+rgm4cH7I9Pz0EKZ6d7sSDKPhP+PRNu+PH/TqX8T1K9lSSS/7iZYKdfcGE2aEqqbc31IDl3UbUIzpFmFf++uOj+eIkTYuaSvbc1GhdFrAEXzyXz7RK3MR+mTAcs+PWTQg7Ca1FNQKKbRzx0XDiEgswuP7jRi5u3sIhPwr9vzwo64Mve3y/JjPfLg9m+LQapl95Hj1JBP/cvPJb82Y9arz9ks7jxOdwCPTU1tfG6iKrM0s/eFupsAPj9L7iXurjz7lh8tf0R/PGnLc41XRw8SO496qsI4G7HJq6UX6WVcGzCz8dRd924/dwbt7OPb0d8Oj02oxCKOB1VQiyjtNDxyYovkG55fz4MfnmS6qvKwmLwHV9IpW56F+54bwQKC4clBfNsJNqZC2yZZWuWQaTqoctsP/uBl0hBVeonlpHbO3eZGpyY7SdkUu39HJ4gKAzE5ciKPJhtjzeyElwNex4Ju1wfbuF3ZqKbJ3VtFA0HNvHsYnT5n0nSTOff9yRB+NPgL7/rLvcLlOkbAWPeZjFp5r74+/4saI549AChW5siTaiiyH6WQtllcsJ9X9DSBmbXFEeTiWw4mCLtr389ONKL69kSUxU8hsLLAo1QFHcX88yILaIPoysihAHxJu2n4dWH7al5YUAL3HgE31jol1D+R+MxCrEczwaUf3FButP59/0FUWe/G88S/77nfdpMeFswf4YDloDE08HwM/VvT0V+ZExkKzMcWwlXtWW7WeEabUzBb62SwjCrjxiLspKp6o2MWmKKWirZnUmFbGfdopgMmoQ9pxfL3nyPZbnXUZ1UsBN14I2iBivRnzwek/OasPx3gyq1EZa/u1svY28O5pKw6870UxhMLfNBNf3nPJRw0kI/jN6oKyrw9PFMYHW1hQmcFaSQpn/529nH1bNVW8XTR1qrq2ebq6t/r+SaLcWWFRe/3YGzvzVAkaVmW0bevx3gQdDJPK27Z8q4F+ozT28MwnRIb/upiPsP7gzTZK8VYXuvzIRoD6In3RVCtWDWa5eX0rTfQH0KqUReep88Ca+sBPdzkZVEI/TExQHmvEh+m0x++23y6B91zDvqvk5zi1by29vb+aNVINVtba7l8/nt/BZNnpXwgNezWj4JnwbYTuYrmEEHLItZn587QT2mbwav9as636XsPAutIX8Kfd5WN28tBhT6vW95ZrYD8PDU2IxCKfUo7KoBfLH3KJXqmQZugibui6KHgbR81G8rBsrL4j2BO/fueY37aB5MQZG1WTN3XRtUmbPtwq+//vrLL421Ty2Y89wPeZK2wHC3LINWz0C6slazLLq7Jq25IHVZ6VXFLDRqHuDG72u/pkGKgt0fiJP7oZ4RzOQLXhKFsGsFmPYpJF5PfTC/cDfAHa/ED1IBvct3OjDjt91YAHrmg7A+3pVQK1gJ2qBN5HIoE0NtZqV/13LqqxuReCwOOSbAIc2t4qHU7kb19Xk26zhZx1XwvKZ/FHhaeF+oRpIZzE7felOkadRVzHUZ006y92Xr4oNTD+BM/VQRDBPpufeWl6GAm1lZWV5eWXkc5MEIpoVHneVBweLx9VW/bfFwgJL7ODUuBGL5fVl/P7C6pXBOeRqMuMcvw7Lf8pWfB9OSf7FPm5EGKkh3AwoNPX9gg55ysFttYuY71FcUBrrLx5MKrlFInKeXavUS6J5OzdJRh9WKuyxRgqlwx7K+r9tymDjOOSnjS4HD5U5ipHYWocBBFMwPy4HEXVzw9FS/CZZ7540btxcGzZNPr5WloQgr9jLoVySUg/eCETd9Kyz6TX86WZyfXwxI7aewS5FtN8g8OqUpnqRjNQ5K0P7ui+qGrHgpkxMJMCDsD3Mm0UWOieI6iFqFZZKowVJCc/sMvsGchrS0V/LybiKNyvmOKc5cDsQh2p5h+pLAlBCqjK+lgTgPRttzr85+cZ+n7ncX+ME9tIci67K4cM1EDQYh/dbdgl+BwGyAX9rS5JnXg1+SGU+83u+vCwjnyGG4gm4wcfyHUX7tMlBfMo38R5FsUhWnsoB9cbC+hAmWYdRVYLYE0TlVBRUoDXps/ozhaSireSl3CGajNwiBxak5VEiJJs36BEz3jEJ/JTm0/Wbak+STlNSh0N2d7S7vfdE7SbTn5u61UXQpUv3WnT/mbs6nFoOKkt4aPA6E7Fe9Tgqh5s1HzSCeoY8p3Y3ye7TR7ePtP/9tc3Xz9Pj4dNU7aeG3XdAv0xzGFdj+DMbdYZGncYGCNBxM4WtvVKWtnw43Pn36tFrCJLju/hY6vzkNtf/2NEX84ggmAyEpeAn+uOuZ+8uIxwtd5uHiw3lfUXsYZfjfuT6KhgM6py81p9sXfbXgWeAEXSZSp0ns1yDUefqeKVpwvkMF9/sEerQ0iVo659U/oHeltFEtbHnI518cAKfMPawQCdQXyZw7w6T99p4lpdFkSP9RnI5eb1aWzEIht1Uo/HcdtB3Fbea4cPgEBfoqokCAoE95indQnRXf5vdXW9rz3lfTqfbCRmq+jeDOO+Ojz/iurxt3boV46V15GFQUp27SM6ymA1Pv5d1bXbg3C8MYcbcNr2UeCQOSUIvydPIjpnJ2/7mz45sHtR+armyX7PrP5dzR2tpaY+0fdRlGpf31WqNxdHRRpHsugymw9anWaFxcwDX4AmZldk/whKAOcdhboFsoWEkwOy96VsHTQMmeDwj0/m0LzYfeRDrf87BbwTfGx8kdUtiP2aBf38LvdTtSb85LA/xO2M2jP3jqOyox47I4zSyhluqOc3DgugfwA08lV5Vsg/5y7iDqtoJHF7bgt/PMq6p1coBHYLF6xkEbxMlk66jT2gffYzp8mDwHrDZ4qyO3ei8GdsVTX+vx836l2j31qeAoWjETvv0xobDXYdFd88AbKtq+S5S+JNIAlzJoC7ODPsAVCtHe5s5BuDyBfk5xGgiIUeW373LpE9RVWclm4lBRW/xoFqQfXBmP52Ml4d5myDcoNaqTpKCxgqU50Et2p7f/AZ4GCs1NbyongeaaaitiYtIcVMt+PTw2DCwk6DA+u7dTYqLocvc+lAYo22hKRffcRV/v0TRdL37j4lEBeIKAt+IgPNmq7R5vpyuH3vEuKgw5/yg0xV03tW/PbO/wJTQk/YTrQP5ZlYI+ihTORsuTBzP93XSlbbF3cUG61p2m2+ucvXgYE10RIG19phvPwOr1R9Mz/4uzHd62OwO5B/syUqLd9jR09K7pOp6GxGw3TOyOJqL7G3MO58z01rGL4w2TmXvHEsCP8xoYFj9MCWHrujaOTBf+hf9af8+ZYDWi1RGoYT24Od+31oC2RKB9rnT6WVDaLIT2/c0ZKRW9CvV0nBIPQlFmVm724uVzrNjMbfx98bkfQSLdWQy/gEIx9fxR3403F0ENWF7sv/54xqs1HrWs062/v9rf8OD9u4//vHuRNynf+tdGH/6VBMOi8v13r8T3Xr16JX7ifa/+p4gWB5d0iaTuRBVoWbp3u/vSE1RwAol5f6arNbDaT4JbV1Kz/Q+8efPZvb5ooRjhxR6k+uDHKCDmSeBi7Pie9zfpvzEVfTUV2BpgthOdp3OFHKLg/eNhq2JRw+Lc/zP8rJCrFNKmZWjlQqX7DkTZxONCOddpZEXw1f1XOlcOH3a2Rnc150nkEwNTczwQdKfe8hCp52rP2hgh/fd03TrosuGPaMOL+xQhaX6qXaBC0y1TnPfR9X5UN8UhVxjH1pkaHeOG8UwYEWY6cGCQvsKKWgcystNV5q8Ad12IeOrgyk9wfSDhwsb4+FkmGAUoVFKLDxA3XsZdmAm+BEK4zvqL+3EXZoIvQac+MjaKCeJ/AUDJh/pd+xSBAAAAAElFTkSuQmCC" alt="Logo">
+    <div class="header-title">Job Card - Car Inspection</div>
+</div>
+
+<div class="container">
+
+    <!-- Customer Details Section -->
+    <div class="section-heading">CUSTOMER DETAILS</div>
+    <div class="details-grid">
+        <div>
+            <label>Name</label>
+            <input type="text" placeholder="Enter name">
+        </div>
+        <div>
+            <label>Brand</label>
+            <select id="car-brand" onchange="updateModels()">
+                <option value="">Select Car Brand</option>
+                <option value="Toyota">Toyota</option>
+                <option value="Honda">Honda</option>
+                <option value="Ford">Ford</option>
+                <option value="Chevrolet">Chevrolet</option>
+                <option value="Nissan">Nissan</option>
+                <option value="BMW">BMW</option>
+                <option value="Mercedes">Mercedes</option>
+                <option value="Volkswagen">Volkswagen</option>
+                <option value="Hyundai">Hyundai</option>
+                <option value="Kia">Kia</option>
+                <option value="Subaru">Subaru</option>
+                <option value="Mazda">Mazda</option>
+                <option value="Audi">Audi</option>
+                <option value="Lexus">Lexus</option>
+                <option value="Jaguar">Jaguar</option>
+                <option value="Porsche">Porsche</option>
+            </select>
+        </div>
+        <div>
+            <label>Model</label>
+            <select id="car-model">
+                <option value="">Select Car Model</option>
+            </select>
+        </div>
+        <div>
+            <label>Reg. No.</label>
+            <input type="text" placeholder="Enter reg. no.">
+        </div>
+        <div>
+            <label>Fuel Status</label>
+            <input type="text" placeholder="Enter reg. no.">
+        </div>
+        <div>
+            <label>Fuel</label>
+            <select id="fuel-type">
+                <option>Select Fuel Type</option>
+                <option value="Petrol">Petrol</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+            </select>
+        </div>
+        <div>
+            <label>Battery Details</label>
+            <input type="text" placeholder="Enter battery details">
+        </div>
+        <div>
+            <label>Mobile</label>
+            <input type="text" placeholder="Enter mobile number">
+        </div>
+        <div>
+            <label>Odometer</label>
+            <input type="text" placeholder="Enter odometer">
+        </div>
+        <div>
+            <label>Order ID</label>
+            <input type="text" placeholder="Enter order ID">
+        </div>
+    
+    </div>
+
+    <!-- Booking Details Section -->
+    <div class="section-heading">BOOKING DETAILS</div>
+    <div class="booking-grid">
+        <div>
+            <label>Workshop Name</label>
+            <input type="text" placeholder="Enter workshop name">
+        </div>
+        <div>
+            <label>Pickup Date</label>
+            <input type="date" id="pickup-date" placeholder="Enter pickup date">
+        </div>
+        <div>
+            <label>Pickup Time</label>
+            <input type="time" id="pickup-time" placeholder="Enter pickup time">
+        </div>
+    </div>
+
+    <!-- Services Section -->
+    <div class="section-heading">SERVICES REQUIRED</div>
+    <div class="services-grid">
+        <div class="service-item">
+            <label>AC Filter Cleaning</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Battery Check</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Brake Pads</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Oil Change</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Transmission Fluid</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Brake Fluid</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Exhaust System</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Fuel Filter</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Spark Plugs</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Interior Cleaning</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Interior Cleaning</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+        <div class="service-item">
+            <label>Interior Cleaning</label>
+            <select>
+                <option>Select Action</option>
+                <option>Replaced</option>
+                <option>Repaired</option>
+                <option>Cleaned</option>
+                <option>Checked</option>
+                <option>Top-up</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Image Upload Section -->
+
+
+    <!-- PDF Button -->
+    <button class="btn-create-pdf" onclick="generatePDF()">Create PDF</button>
+
+</div>
+
+<!-- Include html2pdf.js for PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+<script>
+    // Function to handle image upload
+    function handleImageUpload(input, index) {
+        const uploadedImagesDiv = document.getElementById(`uploaded-images-${index}`);
+        uploadedImagesDiv.innerHTML = ''; // Clear existing images
+
+        const files = Array.from(input.files);
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = `Uploaded Image ${index}`;
+                uploadedImagesDiv.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Hide the upload button after the image is uploaded
+        if (files.length > 0) {
+            input.parentElement.style.display = 'none'; // Hide the file input
+        }
+    }
+
+    // Update car models based on selected brand
+    function updateModels() {
+        const brand = document.getElementById('car-brand').value;
+        const modelSelect = document.getElementById('car-model');
+        modelSelect.innerHTML = '<option value="">Select Car Model</option>'; // Reset models
+
+        // Model lists based on the selected brand
+        const models = {
+            Toyota: ['Corolla', 'Camry', 'RAV4', 'Hilux', 'Yaris'],
+            Honda: ['Civic', 'Accord', 'CR-V', 'Fit', 'Pilot'],
+            Ford: ['Fiesta', 'Focus', 'Mustang', 'Explorer', 'F-150'],
+            Chevrolet: ['Impala', 'Malibu', 'Camaro', 'Equinox', 'Silverado'],
+            Nissan: ['Altima', 'Sentra', 'Rogue', '370Z', 'Titan'],
+            BMW: ['X3', 'X5', 'M3', 'M4', '7 Series'],
+            Mercedes: ['C-Class', 'E-Class', 'S-Class', 'GLA', 'GLE'],
+            Volkswagen: ['Golf', 'Passat', 'Jetta', 'Tiguan', 'Atlas'],
+            Hyundai: ['Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Kona'],
+            Kia: ['Forte', 'Optima', 'Sorento', 'Sportage', 'Soul'],
+            Subaru: ['Outback', 'Forester', 'Impreza', 'WRX', 'Crosstrek'],
+            Mazda: ['CX-5', 'Mazda3', 'Mazda6', 'MX-5 Miata', 'CX-30'],
+            Audi: ['A3', 'A4', 'A6', 'Q5', 'Q7'],
+            Lexus: ['ES', 'RX', 'NX', 'IS', 'GX'],
+            Jaguar: ['F-Type', 'XE', 'XF', 'F-PACE', 'E-PACE'],
+            Porsche: ['911', 'Cayenne', 'Macan', 'Boxster', 'Panamera']
+        };
+
+        // Populate the models dropdown based on selected brand
+        if (models[brand]) {
+            models[brand].forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                modelSelect.appendChild(option);
+            });
+        }
+    }
+
+    // PDF generation function
+    function generatePDF() {
+        const element = document.body;
+        // Hide the button before generating PDF
+        document.querySelector('.btn-create-pdf').style.display = 'none';
+        html2pdf().from(element).set({
+            margin: 1,
+            filename: 'Job_Card_Invoice.pdf',
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait' }
+        }).save().then(() => {
+            // Show the button again after PDF is generated
+            document.querySelector('.btn-create-pdf').style.display = 'block';
+        });
+    }
+</script>
+
+</body>
+</html>
